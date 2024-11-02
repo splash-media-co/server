@@ -647,4 +647,4 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 # Run the server
-server.run()
+server.run(port=4728)
