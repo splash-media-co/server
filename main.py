@@ -79,8 +79,6 @@ load_dotenv()
 KEY = os.getenv("KEY")
 TOKEN = os.getenv("TOKEN")
 
-authenticated_clients = []
-authenticated_client_usernames = []
 authenticated_users = {}
 
 # Event handler for client connection
@@ -89,11 +87,11 @@ async def on_connect(client):
     Info(f"Client {str(client.id)} connected")
 
 
-# Event handler for client disconnection
+# Event handler for client disconnectionw
 @server.on_disconnect
 async def on_disconnect(client):
     Info(f"Client {str(client.id)} disconnected")
-    if client.id in authenticated_clients:
+    if client.id in authenticated_users:
         del authenticated_users[client.id]
         #authenticated_client_usernames.remove(client.username)
         #authenticated_clients.remove(client.id)
