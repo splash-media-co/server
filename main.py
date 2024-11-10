@@ -83,6 +83,7 @@ authenticated_clients = []
 authenticated_client_usernames = []
 authenticated_users = {}
 
+
 # Event handler for client connection
 @server.on_connect
 async def on_connect(client):
@@ -95,8 +96,8 @@ async def on_disconnect(client):
     Info(f"Client {str(client.id)} disconnected")
     if client.id in authenticated_clients:
         del authenticated_users[client.id]
-        #authenticated_client_usernames.remove(client.username)
-        #authenticated_clients.remove(client.id)
+        # authenticated_client_usernames.remove(client.username)
+        # authenticated_clients.remove(client.id)
 
 
 # Event handler for direct command
@@ -170,9 +171,9 @@ async def direct(client, message):
                             )
                             audit.log_action(
                                 "post_fail",
-                                #authenticated_client_usernames[
+                                # authenticated_client_usernames[
                                 #    authenticated_clients.index(client.id)
-                                #],
+                                # ],
                                 authenticated_users[client.id],
                                 f"User tried to post {str(message["val"]["val"]["p"])} but moderation caught it",
                             )
@@ -270,7 +271,7 @@ async def direct(client, message):
                                         "cmd": "status",
                                         "val": {
                                             "message": "Not authorized",
-                                            "username": authenticated_users[client.id]
+                                            "username": authenticated_users[client.id],
                                         },
                                     },
                                 },
@@ -289,7 +290,7 @@ async def direct(client, message):
                                     "cmd": "status",
                                     "val": {
                                         "message": "Post not found",
-                                        "username": authenticated_users[client.id]
+                                        "username": authenticated_users[client.id],
                                     },
                                 },
                             },
@@ -307,9 +308,7 @@ async def direct(client, message):
                         conditions={"uid": str(message["val"]["val"]["uid"])},
                     )
                     if selection:
-                        if str(selection[0][0]) != str(
-                            authenticated_users[client.id]
-                        ):
+                        if str(selection[0][0]) != str(authenticated_users[client.id]):
                             server.send_packet_unicast(
                                 client,
                                 {
@@ -318,7 +317,7 @@ async def direct(client, message):
                                         "cmd": "status",
                                         "val": {
                                             "message": "Not authorized",
-                                            "username": authenticated_users[client.id]
+                                            "username": authenticated_users[client.id],
                                         },
                                     },
                                 },
@@ -395,7 +394,7 @@ async def direct(client, message):
                                     "cmd": "status",
                                     "val": {
                                         "message": "Post not found",
-                                        "username": authenticated_users[client.id]
+                                        "username": authenticated_users[client.id],
                                     },
                                 },
                             },
@@ -439,8 +438,8 @@ async def direct(client, message):
                         "User authenticated!",
                     )
                     authenticated_users[client.id] = client.username
-                    #authenticated_clients.append(client.id)
-                    #authenticated_client_usernames.append(client.username)
+                    # authenticated_clients.append(client.id)
+                    # authenticated_client_usernames.append(client.username)
                 else:
                     server.send_packet_unicast(
                         client,
