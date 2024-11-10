@@ -43,8 +43,8 @@ class WebSocketRateLimiter:
             return False
 
 
-async def isAuthenticated(server, client, authenticated_clients):
-    if client.id not in authenticated_clients:
+async def isAuthenticated(server, client, authenticated_users):
+    if client.id not in authenticated_users:
         try:
             server.send_packet_unicast(
                 client,

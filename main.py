@@ -81,7 +81,7 @@ TOKEN = os.getenv("TOKEN")
 
 authenticated_clients = []
 authenticated_client_usernames = []
-
+authenticated_users = {}
 
 # Event handler for client connection
 @server.on_connect
@@ -94,8 +94,9 @@ async def on_connect(client):
 async def on_disconnect(client):
     Info(f"Client {str(client.id)} disconnected")
     if client.id in authenticated_clients:
-        authenticated_client_usernames.remove(client.username)
-        authenticated_clients.remove(client.id)
+        del authenticated_users[client.id]
+        #authenticated_client_usernames.remove(client.username)
+        #authenticated_clients.remove(client.id)
 
 
 # Event handler for direct command
@@ -142,7 +143,7 @@ async def direct(client, message):
         case "post":
             match str(message["val"]["val"]["type"]):
                 case "send":
-                    if not await isAuthenticated(server, client, authenticated_clients):
+                    if not await isAuthenticated(server, client, authenticated_users):
                         return
                     uid = str(uuid.uuid4())
                     try:
@@ -169,9 +170,10 @@ async def direct(client, message):
                             )
                             audit.log_action(
                                 "post_fail",
-                                authenticated_client_usernames[
-                                    authenticated_clients.index(client.id)
-                                ],
+                                #authenticated_client_usernames[
+                                #    authenticated_clients.index(client.id)
+                                #],
+                                authenticated_users[client.id],
                                 f"User tried to post {str(message["val"]["val"]["p"])} but moderation caught it",
                             )
                             return
@@ -182,11 +184,7 @@ async def direct(client, message):
                     db.insert_data(
                         "posts",
                         (
-                            str(
-                                authenticated_client_usernames[
-                                    authenticated_clients.index(client.id)
-                                ]
-                            ),
+                            str(authenticated_users[client.id]),
                             float(time.time()),
                             uid,
                             str(message["val"]["val"]["p"]),
@@ -204,9 +202,7 @@ async def direct(client, message):
                             "val": {
                                 "cmd": "rpost",
                                 "val": {
-                                    "author": authenticated_client_usernames[
-                                        authenticated_clients.index(client.id)
-                                    ],
+                                    "author": str(authenticated_users[client.id]),
                                     "post_content": str(message["val"]["val"]["p"]),
                                     "uid": uid,
                                     "attachment": attachment,
@@ -216,17 +212,13 @@ async def direct(client, message):
                     )
                     audit.log_action(
                         "post",
-                        authenticated_client_usernames[
-                            authenticated_clients.index(client.id)
-                        ],
+                        str(authenticated_users[client.id]),
                         f"User posted {str(message["val"]["val"]["p"])}",
                     )
                     if SETTINGS["bridge_enabled"]:
                         url = "https://splashpost.vercel.app/home/"
                         payload = (
-                            authenticated_client_usernames[
-                                authenticated_clients.index(client.id)
-                            ]
+                            str(authenticated_users[client.id])
                             + ": "
                             + str(message["val"]["val"]["p"]).strip()
                             + (
@@ -239,18 +231,14 @@ async def direct(client, message):
                         with concurrent.futures.ProcessPoolExecutor() as executor:
                             executor.submit(post, url + str(payload[0]), TOKEN)
                 case "delete":
-                    if not await isAuthenticated(server, client, authenticated_clients):
+                    if not await isAuthenticated(server, client, authenticated_users):
                         return
                     selection = db.select_data(
                         "posts",
                         conditions={"uid": str(message["val"]["val"]["uid"])},
                     )
                     if selection:
-                        if str(selection[0][0]) == str(
-                            authenticated_client_usernames[
-                                authenticated_clients.index(client.id)
-                            ]
-                        ):
+                        if str(selection[0][0]) == str(authenticated_users[client.id]):
                             db.update_data(
                                 "posts",
                                 {"isDeleted": True},
@@ -270,9 +258,7 @@ async def direct(client, message):
                             )
                             audit.log_action(
                                 "delete",
-                                authenticated_client_usernames[
-                                    authenticated_clients.index(client.id)
-                                ],
+                                authenticated_users[client.id],
                                 f"User deleted post with UID {str(message["val"]["val"]["uid"])}",
                             )
                         else:
@@ -284,18 +270,14 @@ async def direct(client, message):
                                         "cmd": "status",
                                         "val": {
                                             "message": "Not authorized",
-                                            "username": authenticated_client_usernames[
-                                                authenticated_clients.index(client.id)
-                                            ],
+                                            "username": authenticated_users[client.id]
                                         },
                                     },
                                 },
                             )
                             audit.log_action(
                                 "delete_fail",
-                                authenticated_client_usernames[
-                                    authenticated_clients.index(client.id)
-                                ],
+                                authenticated_users[client.id],
                                 f"User tried to delete a post with UID {str(message["val"]["val"]["uid"])} that doesn't belong to their account",
                             )
                     else:
@@ -307,22 +289,18 @@ async def direct(client, message):
                                     "cmd": "status",
                                     "val": {
                                         "message": "Post not found",
-                                        "username": authenticated_client_usernames[
-                                            authenticated_clients.index(client.id)
-                                        ],
+                                        "username": authenticated_users[client.id]
                                     },
                                 },
                             },
                         )
                         audit.log_action(
                             "delete_fail",
-                            authenticated_client_usernames[
-                                authenticated_clients.index(client.id)
-                            ],
+                            authenticated_users[client.id],
                             f"User tried to delete a post with UID {str(message["val"]["val"]["uid"])} that didn't exist",
                         )
                 case "edit":
-                    if not await isAuthenticated(server, client, authenticated_clients):
+                    if not await isAuthenticated(server, client, authenticated_users):
                         return
                     selection = db.select_data(
                         "posts",
@@ -330,9 +308,7 @@ async def direct(client, message):
                     )
                     if selection:
                         if str(selection[0][0]) != str(
-                            authenticated_client_usernames[
-                                authenticated_clients.index(client.id)
-                            ]
+                            authenticated_users[client.id]
                         ):
                             server.send_packet_unicast(
                                 client,
@@ -342,18 +318,14 @@ async def direct(client, message):
                                         "cmd": "status",
                                         "val": {
                                             "message": "Not authorized",
-                                            "username": authenticated_client_usernames[
-                                                authenticated_clients.index(client.id)
-                                            ],
+                                            "username": authenticated_users[client.id]
                                         },
                                     },
                                 },
                             )
                             audit.log_action(
                                 "edit_fail",
-                                authenticated_client_usernames[
-                                    authenticated_clients.index(client.id)
-                                ],
+                                authenticated_users[client.id],
                                 f"User tried to edit a post with UID {str(message["val"]["val"]["uid"])} that doesn't belong to their account",
                             )
                         else:
@@ -378,9 +350,7 @@ async def direct(client, message):
                                     )
                                     audit.log_action(
                                         "edit_fail",
-                                        authenticated_client_usernames[
-                                            authenticated_clients.index(client.id)
-                                        ],
+                                        authenticated_users[client.id],
                                         f"User tried to edit {str(message["val"]["val"]["edit"])} but moderation caught it",
                                     )
                                     return
@@ -413,9 +383,7 @@ async def direct(client, message):
                             )
                             audit.log_action(
                                 "edit",
-                                authenticated_client_usernames[
-                                    authenticated_clients.index(client.id)
-                                ],
+                                authenticated_users[client.id],
                                 f"User edited a post with UID {str(message["val"]["val"]["uid"])}",
                             )
                     else:
@@ -427,9 +395,7 @@ async def direct(client, message):
                                     "cmd": "status",
                                     "val": {
                                         "message": "Post not found",
-                                        "username": authenticated_client_usernames[
-                                            authenticated_clients.index(client.id)
-                                        ],
+                                        "username": authenticated_users[client.id]
                                     },
                                 },
                             },
@@ -472,8 +438,9 @@ async def direct(client, message):
                         client.username,
                         "User authenticated!",
                     )
-                    authenticated_clients.append(client.id)
-                    authenticated_client_usernames.append(client.username)
+                    authenticated_users[client.id] = client.username
+                    #authenticated_clients.append(client.id)
+                    #authenticated_client_usernames.append(client.username)
                 else:
                     server.send_packet_unicast(
                         client,
