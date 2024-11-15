@@ -4,13 +4,15 @@
 
 ---
 
+# ARCHIVED DUE TO @RealLordPenguin SHUTTING DOWN SPLASH!
+
 # Splash Server Documentation
 ## Overview
 
-The Splash server is a backend system responsible for handling various commands from clients, such as posting messages, authentication, retrieving posts, and account creation. This document provides comprehensive documentation for each supported command, including usage instructions, parameters, examples, and potential errors. 
+This was the backend system responsible for handling various commands from clients, such as posting messages, authentication, retrieving posts, and account creation. This document provides comprehensive documentation for each supported command, including usage instructions, parameters, examples, and potential errors for Splash. 
 
 > [!WARNING]  
-> This server is still in development. Expect breaking changes, bugs, and lots of unstable stuff.
+> This server was still in development when Splash was still in production. Expect bugs and lots of unstable stuff.
 
 ## Commands
 
